@@ -1,0 +1,6 @@
+buatkan planning untuk aplikasi react.js dan disimpan dengan nama 
+quran_initial_plan.md.
+aplikasi ini memamfaatkan google gemini AI.plan by plan nya  adalah sebagai berikut:
+1.ciptakan projek react.js baru.
+1.buat plan aplikasi yang menerima 1 inputan berupa nama surah dan ayat dari al quran,kemudian setelah ditekan tombol cari.aplikasi melakukan pemprosesan dan menampilkan hasil berupa terjemahaan per kata serta analisis nahwu dan Sharaf ayat tersebut.
+2.optimalkan aplikasi untuk dideploy pada platform netlify.com

@@ -87,6 +87,10 @@ export default function ApiKeyModal({ isOpen, onClose, onApiKeySaved }) {
         style={{ maxWidth: '580px' }}
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="mobile-sheet-handle-bar">
+          <div className="mobile-drawer-handle" />
+        </div>
+
         <div className="modal-header">
           <div className="modal-header-left">
             <Key size={18} color="#f59e0b" />

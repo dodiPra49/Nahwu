@@ -36,6 +36,11 @@ export default function WordDetailModal({
         role="dialog"
         aria-modal="true"
       >
+        {/* Mobile Sheet Handle */}
+        <div className="mobile-sheet-handle-bar">
+          <div className="mobile-drawer-handle" />
+        </div>
+
         {/* Modal Header */}
         <div className="modal-header">
           <div className="modal-header-left">

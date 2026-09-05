@@ -11,6 +11,10 @@ export default function InfoModal({ isOpen, onClose }) {
         style={{ maxWidth: '620px' }}
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="mobile-sheet-handle-bar">
+          <div className="mobile-drawer-handle" />
+        </div>
+
         <div className="modal-header">
           <div className="modal-header-left">
             <BookOpen size={20} color="#10b981" />

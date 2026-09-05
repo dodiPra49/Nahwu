@@ -1,0 +1,224 @@
+:root {
+  /* Color Palette - Islamic Royal Theme */
+  --bg-main: #091312;
+  --bg-card: rgba(18, 33, 31, 0.75);
+  --bg-card-hover: rgba(26, 46, 44, 0.9);
+  --bg-card-solid: #12211f;
+  --bg-glass: rgba(13, 27, 25, 0.65);
+  
+  --emerald-900: #064e3b;
+  --emerald-800: #065f46;
+  --emerald-600: #059669;
+  --emerald-500: #10b981;
+  --emerald-400: #34d399;
+  --emerald-100: #d1fae5;
+  
+  --gold-600: #d97706;
+  --gold-500: #f59e0b;
+  --gold-400: #fbbf24;
+  --gold-200: #fde68a;
+  --gold-100: #fef3c7;
+
+  /* I'rab Semantic Status Colors */
+  --irab-marfu: #10b981;
+  --irab-marfu-bg: rgba(16, 185, 129, 0.15);
+  --irab-marfu-border: rgba(16, 185, 129, 0.35);
+
+  --irab-manshub: #f43f5e;
+  --irab-manshub-bg: rgba(244, 63, 94, 0.15);
+  --irab-manshub-border: rgba(244, 63, 94, 0.35);
+
+  --irab-majrur: #3b82f6;
+  --irab-majrur-bg: rgba(59, 130, 246, 0.15);
+  --irab-majrur-border: rgba(59, 130, 246, 0.35);
+
+  --irab-majzum: #f59e0b;
+  --irab-majzum-bg: rgba(245, 158, 11, 0.15);
+  --irab-majzum-border: rgba(245, 158, 11, 0.35);
+
+  --irab-mabni: #a855f7;
+  --irab-mabni-bg: rgba(168, 85, 247, 0.15);
+  --irab-mabni-border: rgba(168, 85, 247, 0.35);
+
+  /* Typography */
+  --font-arabic: 'Amiri', 'Scheherazade New', serif;
+  --font-arabic-title: 'Scheherazade New', 'Amiri', serif;
+  --font-ui: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+
+  /* Neutral Shades */
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(245, 158, 11, 0.25);
+  --border-emerald: rgba(16, 185, 129, 0.25);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 30px rgba(16, 185, 129, 0.15);
+  --shadow-gold-glow: 0 0 25px rgba(245, 158, 11, 0.2);
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+}
+
+/* Reset & Base Setup */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg-main);
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(6, 78, 59, 0.35) 0%, transparent 60%),
+    radial-gradient(circle at 10% 40%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(245, 158, 11, 0.06) 0%, transparent 45%);
+  background-attachment: fixed;
+  color: var(--text-main);
+  font-family: var(--font-ui);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(9, 19, 18, 0.9);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(52, 211, 153, 0.25);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(52, 211, 153, 0.45);
+}
+
+/* Interactive Elements */
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input, textarea, select {
+  font-family: inherit;
+  outline: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Utilities */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.text-arabic {
+  font-family: var(--font-arabic);
+  direction: rtl;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge-emerald {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--emerald-400);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-gold {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--gold-400);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Status Badges for I'rab */
+.badge-marfu {
+  background: var(--irab-marfu-bg);
+  color: var(--irab-marfu);
+  border: 1px solid var(--irab-marfu-border);
+}
+
+.badge-manshub {
+  background: var(--irab-manshub-bg);
+  color: var(--irab-manshub);
+  border: 1px solid var(--irab-manshub-border);
+}
+
+.badge-majrur {
+  background: var(--irab-majrur-bg);
+  color: var(--irab-majrur);
+  border: 1px solid var(--irab-majrur-border);
+}
+
+.badge-majzum {
+  background: var(--irab-majzum-bg);
+  color: var(--irab-majzum);
+  border: 1px solid var(--irab-majzum-border);
+}
+
+.badge-mabni {
+  background: var(--irab-mabni-bg);
+  color: var(--irab-mabni);
+  border: 1px solid var(--irab-mabni-border);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+  50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.45); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s ease-out forwards;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}

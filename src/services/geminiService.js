@@ -9,37 +9,43 @@ const CACHE_PREFIX = 'nahwu_cache_';
 const DEFAULT_MODEL_CANDIDATES = [
   'gemini-2.0-flash',
   'gemini-2.0-flash-exp',
+  'gemini-2.5-flash',
   'gemini-1.5-flash-latest',
   'gemini-1.5-flash-002',
   'gemini-1.5-flash',
-  'gemini-2.5-flash',
   'gemini-2.0-pro-exp-02-05',
-  'gemini-1.5-pro-latest',
-  'gemini-1.5-pro-002',
-  'gemini-1.5-pro'
+  'gemini-1.5-pro-latest'
 ];
 
 /**
- * Mengambil API key dari localStorage atau environment variable Vite
+ * Mengambil daftar API key (bisa lebih dari satu, dipisahkan koma atau baris baru)
  */
-export function getStoredApiKey() {
-  const localKey = localStorage.getItem(STORAGE_KEY_API);
-  if (localKey && localKey.trim()) {
-    return localKey.trim();
-  }
-  return (import.meta.env.VITE_GEMINI_API_KEY || '').trim();
+export function getStoredApiKeys() {
+  const rawKey = localStorage.getItem(STORAGE_KEY_API) || import.meta.env.VITE_GEMINI_API_KEY || '';
+  if (!rawKey) return [];
+  return rawKey
+    .split(/[\n,;]+/)
+    .map((k) => k.trim())
+    .filter((k) => k.length > 5);
 }
 
 /**
- * Menyimpan API key ke localStorage
+ * Mengambil satu API key pertama yang tersimpan
  */
-export function saveApiKey(key) {
-  if (!key) {
+export function getStoredApiKey() {
+  const keys = getStoredApiKeys();
+  return keys.length > 0 ? keys[0] : '';
+}
+
+/**
+ * Menyimpan API key (bisa multi-key) ke localStorage
+ */
+export function saveApiKey(keyString) {
+  if (!keyString || !keyString.trim()) {
     localStorage.removeItem(STORAGE_KEY_API);
     localStorage.removeItem(STORAGE_KEY_MODEL);
   } else {
-    localStorage.setItem(STORAGE_KEY_API, key.trim());
-    // Reset model yang tersimpan agar dideteksi ulang dengan key baru
+    localStorage.setItem(STORAGE_KEY_API, keyString.trim());
     localStorage.removeItem(STORAGE_KEY_MODEL);
   }
 }
@@ -59,8 +65,12 @@ export function clearNahwuCache() {
 }
 
 /**
+ * Fungsi helper delay (sleep)
+ */
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
  * Mendapatkan daftar model Gemini yang aktif dan didukung oleh API key pengguna
- * Memanggil endpoint resmi Google ListModels
  */
 export async function fetchSupportedGeminiModels(apiKey) {
   if (!apiKey) return [];
@@ -72,12 +82,10 @@ export async function fetchSupportedGeminiModels(apiKey) {
     }
     const data = await response.json();
     if (data.models && Array.isArray(data.models)) {
-      // Filter model yang mendukung generateContent
       const generateModels = data.models
         .filter((m) => m.supportedGenerationMethods?.includes('generateContent'))
         .map((m) => m.name.replace(/^models\//, ''));
 
-      // Urutkan berdasarkan prioritas performa & kecepatan
       const sorted = [...generateModels].sort((a, b) => {
         const getScore = (name) => {
           if (name.includes('2.0-flash')) return 100;
@@ -85,8 +93,6 @@ export async function fetchSupportedGeminiModels(apiKey) {
           if (name.includes('flash-latest')) return 80;
           if (name.includes('1.5-flash')) return 70;
           if (name.includes('flash')) return 60;
-          if (name.includes('2.0-pro')) return 50;
-          if (name.includes('1.5-pro')) return 40;
           return 10;
         };
         return getScore(b) - getScore(a);
@@ -187,11 +193,7 @@ function extractJsonString(rawText) {
 }
 
 /**
- * Melakukan analisis Nahwu & Sharaf
- * 1. Mengecek preset data offline
- * 2. Mengecek cache localStorage
- * 3. Jika ada API key -> deteksi model yang valid & panggil Gemini AI
- * 4. Simpan ke cache jika sukses
+ * Melakukan analisis Nahwu & Sharaf dengan multi-key rotation, auto-retry, dan fallback
  */
 export async function analyzeVerse(surah, ayahNumber, officialVerseData = null) {
   const key = `${surah.number}:${ayahNumber}`;
@@ -224,100 +226,122 @@ export async function analyzeVerse(surah, ayahNumber, officialVerseData = null) 
   const translationText = officialVerseData?.translationId || '';
   const audioUrl = officialVerseData?.audioUrl || '';
 
-  // 3. Ambil API key
-  const apiKey = getStoredApiKey();
-  if (!apiKey) {
+  // 3. Ambil daftar API key (mendukung multi-key)
+  const apiKeys = getStoredApiKeys();
+  if (apiKeys.length === 0) {
     throw new Error(
       `API Key Gemini belum disetel. Silakan klik tombol 'Set API Key' di navbar atas untuk memasukkan API Key Google Gemini Anda (gratis di aistudio.google.com), atau gunakan contoh preset bawaan (Al-Fatihah 1-2, Ayat Kursi 2:255, Al-Ikhlas 1, An-Nas 1).`
     );
   }
 
-  // 4. Tentukan daftar model yang akan dicoba
-  // Prioritaskan model yang sebelumnya sudah terbukti berhasil
-  const knownWorkingModel = localStorage.getItem(STORAGE_KEY_MODEL);
-  let modelsToTry = [];
-
-  if (knownWorkingModel) {
-    modelsToTry.push(knownWorkingModel);
-  }
-
-  // Coba ambil model yang aktif secara dinamis dari API
-  try {
-    const liveModels = await fetchSupportedGeminiModels(apiKey);
-    if (liveModels.length > 0) {
-      liveModels.forEach((m) => {
-        if (!modelsToTry.includes(m)) modelsToTry.push(m);
-      });
-    }
-  } catch (listErr) {
-    console.warn('Gagal fetch live models, menggunakan daftar kandidat default:', listErr);
-  }
-
-  // Tambahkan kandidat default jika belum ada
-  DEFAULT_MODEL_CANDIDATES.forEach((m) => {
-    if (!modelsToTry.includes(m)) modelsToTry.push(m);
-  });
-
-  // 5. Inisialisasi Google Gen AI
-  const genAI = new GoogleGenerativeAI(apiKey);
   let lastError = null;
 
-  for (const modelName of modelsToTry) {
+  // 4. Iterasi melalui setiap API Key yang tersedia (Rotasi Otomatis)
+  for (let keyIdx = 0; keyIdx < apiKeys.length; keyIdx++) {
+    const currentApiKey = apiKeys[keyIdx];
+    const genAI = new GoogleGenerativeAI(currentApiKey);
+
+    // Tentukan model yang akan dicoba untuk key ini
+    const knownWorkingModel = localStorage.getItem(STORAGE_KEY_MODEL);
+    let modelsToTry = [];
+    if (knownWorkingModel) modelsToTry.push(knownWorkingModel);
+
     try {
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.2
+      const liveModels = await fetchSupportedGeminiModels(currentApiKey);
+      if (liveModels.length > 0) {
+        liveModels.forEach((m) => {
+          if (!modelsToTry.includes(m)) modelsToTry.push(m);
+        });
+      }
+    } catch (e) {
+      // Abaikan jika gagal list models
+    }
+
+    DEFAULT_MODEL_CANDIDATES.forEach((m) => {
+      if (!modelsToTry.includes(m)) modelsToTry.push(m);
+    });
+
+    // Coba model pada key saat ini
+    for (const modelName of modelsToTry) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const model = genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.2
+            }
+          });
+
+          const prompt = buildAnalysisPrompt(surah.nameLatin, ayahNumber, arabicText, translationText);
+          const result = await model.generateContent(prompt);
+          const textResponse = result.response.text();
+          const cleanedJson = extractJsonString(textResponse);
+          const analysisData = JSON.parse(cleanedJson);
+
+          // Simpan model sukses
+          localStorage.setItem(STORAGE_KEY_MODEL, modelName);
+
+          const completeData = {
+            surahNumber: surah.number,
+            surahName: surah.nameLatin,
+            ayahNumber: ayahNumber,
+            arabicFull: analysisData.arabicFull || arabicText,
+            translationId: analysisData.translationId || translationText,
+            audioUrl: audioUrl,
+            words: analysisData.words || [],
+            grammarNotes: analysisData.grammarNotes || '',
+            source: 'gemini',
+            modelUsed: modelName,
+            analyzedAt: new Date().toISOString()
+          };
+
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify(completeData));
+          } catch (storageErr) {
+            console.warn('Gagal menyimpan cache:', storageErr);
+          }
+
+          return completeData;
+        } catch (err) {
+          const isRateLimit = err?.message?.includes('RESOURCE_EXHAUSTED') || err?.message?.includes('Quota exceeded') || err?.status === 429;
+          const is404 = err?.message?.includes('404') || err?.message?.includes('not found');
+
+          lastError = err;
+
+          if (isRateLimit) {
+            console.warn(`Rate limit (429) pada key #${keyIdx + 1} model ${modelName}.`);
+            // Jika ada attempt kedua dan belum coba kunci lain, tunggu 2.5 detik
+            if (attempt === 0) {
+              await delay(2500);
+              continue; // Coba sekali lagi setelah jeda
+            }
+            // Jika sudah 2x gagal dan ada key cadangan berikutnya, break loop model untuk ganti key!
+            if (keyIdx < apiKeys.length - 1) {
+              console.log(`Beralih ke API Key cadangan #${keyIdx + 2}...`);
+              break;
+            }
+          }
+
+          if (is404) {
+            // Model tidak ada, langsung lanjut ke model berikutnya
+            break;
+          }
+
+          // Error lainnya
+          break;
         }
-      });
-
-      const prompt = buildAnalysisPrompt(surah.nameLatin, ayahNumber, arabicText, translationText);
-      const result = await model.generateContent(prompt);
-      const textResponse = result.response.text();
-      const cleanedJson = extractJsonString(textResponse);
-      const analysisData = JSON.parse(cleanedJson);
-
-      // Simpan model yang sukses ini sebagai preferred model untuk panggilan berikutnya
-      localStorage.setItem(STORAGE_KEY_MODEL, modelName);
-
-      // Lengkapi field jika belum ada
-      const completeData = {
-        surahNumber: surah.number,
-        surahName: surah.nameLatin,
-        ayahNumber: ayahNumber,
-        arabicFull: analysisData.arabicFull || arabicText,
-        translationId: analysisData.translationId || translationText,
-        audioUrl: audioUrl,
-        words: analysisData.words || [],
-        grammarNotes: analysisData.grammarNotes || '',
-        source: 'gemini',
-        modelUsed: modelName,
-        analyzedAt: new Date().toISOString()
-      };
-
-      // Simpan ke cache
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify(completeData));
-      } catch (storageErr) {
-        console.warn('Gagal menyimpan cache ke localStorage:', storageErr);
-      }
-
-      return completeData;
-    } catch (err) {
-      console.warn(`Gagal memanggil model ${modelName}:`, err?.message);
-      lastError = err;
-      // Jika error bukan 404 (misal invalid API key / quota exceeded), jangan paksa coba 10 model
-      if (err?.message?.includes('API_KEY_INVALID') || err?.message?.includes('API key not valid')) {
-        throw new Error('API Key Google Gemini yang dimasukkan tidak valid. Mohon periksa kembali API Key Anda di aistudio.google.com/app/apikey.');
-      }
-      if (err?.message?.includes('Quota exceeded') || err?.message?.includes('RESOURCE_EXHAUSTED')) {
-        throw new Error('Batas kuota gratis API Gemini harian/menit telah tercapai (Quota Exceeded). Silakan coba lagi beberapa saat.');
       }
     }
   }
 
-  throw new Error(
-    `Gagal memproses dengan model Gemini yang tersedia (${modelsToTry.slice(0, 3).join(', ')}...). Error: ${lastError?.message || 'Koneksi gagal'}`
-  );
+  // Jika semua key dan model exhausted:
+  const isFinalRateLimit = lastError?.message?.includes('RESOURCE_EXHAUSTED') || lastError?.message?.includes('Quota exceeded');
+  if (isFinalRateLimit) {
+    throw new Error(
+      `Batas kuota gratis (Rate Limit 15 RPM / Requests Per Minute) dari Google tercapai. Kuota per menit ini biasanya di-reset otomatis dalam 30–60 detik. Anda juga dapat menambahkan API Key cadangan di menu 'Set API Key' untuk rotasi tanpa henti.`
+    );
+  }
+
+  throw new Error(`Gagal memproses dengan Gemini AI: ${lastError?.message || 'Koneksi bermasalah'}`);
 }

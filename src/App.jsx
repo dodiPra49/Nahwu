@@ -12,7 +12,7 @@ import { parseSearchInput } from './utils/inputParser';
 import { fetchOfficialVerse } from './services/quranApiService';
 import { analyzeVerse, getStoredApiKey } from './services/geminiService';
 import { PRESET_ANALYSIS } from './data/presetSamples';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Key } from 'lucide-react';
 import './App.css';
 
 export default function App() {
@@ -21,6 +21,7 @@ export default function App() {
   const [selectedWord, setSelectedWord] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [lastQuery, setLastQuery] = useState('');
 
   // Modal States
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
@@ -49,6 +50,7 @@ export default function App() {
 
   const handleSearch = async (rawQuery) => {
     setError(null);
+    setLastQuery(rawQuery);
     const parsed = parseSearchInput(rawQuery);
 
     if (!parsed.success) {
@@ -122,11 +124,38 @@ export default function App() {
 
         {/* Pesan Error */}
         {error && (
-          <div className="error-card animate-fade-in">
-            <AlertCircle size={24} style={{ flexShrink: 0 }} />
-            <div>
-              <div className="error-title">Gagal Memproses Permintaan</div>
-              <p style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>{error}</p>
+          <div className="error-card animate-fade-in" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <AlertCircle size={24} style={{ flexShrink: 0 }} />
+              <div>
+                <div className="error-title">Gagal Memproses Permintaan</div>
+                <p style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>{error}</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '6px', flexWrap: 'wrap' }}>
+              {lastQuery && (
+                <button
+                  type="button"
+                  onClick={() => handleSearch(lastQuery)}
+                  disabled={isLoading}
+                  className="btn-search-submit"
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                >
+                  <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+                  <span>Coba Lagi Sekarang</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsApiKeyModalOpen(true)}
+                className="btn-nav"
+                style={{ fontSize: '0.85rem', padding: '8px 14px', background: 'rgba(255, 255, 255, 0.08)' }}
+              >
+                <Key size={14} color="#f59e0b" />
+                <span>Tambah API Key Cadangan</span>
+              </button>
             </div>
           </div>
         )}

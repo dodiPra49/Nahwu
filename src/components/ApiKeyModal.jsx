@@ -1,21 +1,29 @@
 import React, { useState } from 'react';
-import { Key, X, Check, ExternalLink, ShieldCheck, AlertCircle, RefreshCw, Zap } from 'lucide-react';
-import { getStoredApiKey, saveApiKey, clearNahwuCache, fetchSupportedGeminiModels } from '../services/geminiService';
+import { Key, X, Check, ExternalLink, ShieldCheck, AlertCircle, RefreshCw, Zap, PlusCircle } from 'lucide-react';
+import { getStoredApiKeys, saveApiKey, clearNahwuCache, fetchSupportedGeminiModels } from '../services/geminiService';
 
 export default function ApiKeyModal({ isOpen, onClose, onApiKeySaved }) {
-  const [apiKey, setApiKey] = useState(getStoredApiKey());
+  const [keysInput, setKeysInput] = useState(() => {
+    const existing = getStoredApiKeys();
+    return existing.join('\n');
+  });
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [cacheCleared, setCacheCleared] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
-  const [testResult, setTestResult] = useState(null); // { success: boolean, message: string, models?: string[] }
+  const [testResult, setTestResult] = useState(null);
 
   if (!isOpen) return null;
 
   const handleTestConnection = async () => {
-    if (!apiKey || !apiKey.trim()) {
+    const rawKeys = keysInput
+      .split(/[\n,;]+/)
+      .map((k) => k.trim())
+      .filter((k) => k.length > 5);
+
+    if (rawKeys.length === 0) {
       setTestResult({
         success: false,
-        message: 'Masukkan API Key terlebih dahulu untuk menguji koneksi.'
+        message: 'Masukkan minimal satu API Key terlebih dahulu untuk diuji.'
       });
       return;
     }
@@ -23,35 +31,43 @@ export default function ApiKeyModal({ isOpen, onClose, onApiKeySaved }) {
     setIsTesting(true);
     setTestResult(null);
 
-    try {
-      const models = await fetchSupportedGeminiModels(apiKey.trim());
-      if (models.length > 0) {
-        setTestResult({
-          success: true,
-          message: `Koneksi berhasil! Model aktif ditemukan: ${models.slice(0, 3).join(', ')}${models.length > 3 ? ` (+${models.length - 3} lainnya)` : ''}`,
-          models
-        });
-      } else {
-        setTestResult({
-          success: false,
-          message: 'API Key terhubung, tetapi tidak menemukan model generateContent yang aktif.'
-        });
+    let activeCount = 0;
+    let sampleModels = [];
+    let failureReasons = [];
+
+    for (let i = 0; i < rawKeys.length; i++) {
+      const k = rawKeys[i];
+      try {
+        const models = await fetchSupportedGeminiModels(k);
+        if (models.length > 0) {
+          activeCount++;
+          if (sampleModels.length === 0) sampleModels = models;
+        }
+      } catch (err) {
+        failureReasons.push(`Key #${i + 1}: ${err.message}`);
       }
-    } catch (err) {
+    }
+
+    setIsTesting(false);
+
+    if (activeCount > 0) {
+      setTestResult({
+        success: true,
+        message: `Koneksi berhasil! ${activeCount} dari ${rawKeys.length} API Key aktif. Model terdeteksi: ${sampleModels.slice(0, 2).join(', ')}.`
+      });
+    } else {
       setTestResult({
         success: false,
-        message: `Koneksi gagal: ${err.message || 'API Key tidak valid atau dinonaktifkan di Google Cloud'}`
+        message: `Koneksi gagal: ${failureReasons.join('; ') || 'Periksa kembali API Key Anda'}`
       });
-    } finally {
-      setIsTesting(false);
     }
   };
 
   const handleSave = (e) => {
     e.preventDefault();
-    saveApiKey(apiKey);
+    saveApiKey(keysInput);
     setSaveSuccess(true);
-    if (onApiKeySaved) onApiKeySaved(apiKey);
+    if (onApiKeySaved) onApiKeySaved(keysInput.trim());
     setTimeout(() => {
       setSaveSuccess(false);
       onClose();
@@ -68,7 +84,7 @@ export default function ApiKeyModal({ isOpen, onClose, onApiKeySaved }) {
     <div className="modal-backdrop" onClick={onClose}>
       <div
         className="modal-content glass-panel"
-        style={{ maxWidth: '540px' }}
+        style={{ maxWidth: '580px' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
@@ -82,29 +98,37 @@ export default function ApiKeyModal({ isOpen, onClose, onApiKeySaved }) {
         </div>
 
         <form onSubmit={handleSave} className="modal-body-scroll" style={{ gap: '16px', display: 'flex', flexDirection: 'column' }}>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-            Aplikasi menggunakan model <strong>Gemini Flash</strong> (auto-detect versi aktif: <code>gemini-2.0-flash</code> / <code>gemini-1.5-flash-latest</code>) untuk analisis per kata, I'rab Nahwu, dan Sharaf.
-          </p>
-
-          <div className="info-box-alert">
-            <ShieldCheck size={18} color="#10b981" style={{ flexShrink: 0 }} />
-            <p style={{ fontSize: '0.82rem' }}>
-              API Key Anda disimpan secara aman di <code>localStorage</code> peramban Anda. Tidak pernah dikirim ke pihak ketiga selain endpoint resmi Google Generative Language.
-            </p>
+          <div className="info-box-alert" style={{ background: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgba(245, 158, 11, 0.3)', color: 'var(--gold-100)' }}>
+            <Zap size={18} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ fontSize: '0.82rem', lineHeight: '1.5' }}>
+              <strong>Solusi Kuota Gratis (15 RPM / Rate Limit):</strong>
+              <p style={{ marginTop: '3px' }}>
+                Google AI Studio membatasi 15 request per menit untuk tier gratis. Anda dapat memasukkan <strong>lebih dari 1 API Key</strong> (pisahkan dengan baris baru/koma). Aplikasi akan otomatis melakukan rotasi ke key cadangan jika salah satu key mencapai batas kuota!
+              </p>
+            </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px' }}>
-              Gemini API Key
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px' }}>
+              <span>Gemini API Key (Bisa Multi-Key)</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Satu per baris</span>
             </label>
-            <input
-              type="password"
+            <textarea
               className="search-input"
-              style={{ width: '100%', fontSize: '0.95rem', padding: '12px 14px' }}
-              placeholder="AIzaSy..."
-              value={apiKey}
+              rows={3}
+              style={{
+                width: '100%',
+                fontSize: '0.9rem',
+                padding: '12px 14px',
+                borderRadius: 'var(--radius-md)',
+                resize: 'vertical',
+                minHeight: '80px',
+                fontFamily: 'monospace'
+              }}
+              placeholder={`AIzaSyKeyPertama...\nAIzaSyKeyKeduaCadangan...`}
+              value={keysInput}
               onChange={(e) => {
-                setApiKey(e.target.value);
+                setKeysInput(e.target.value);
                 setTestResult(null);
               }}
             />
@@ -115,9 +139,9 @@ export default function ApiKeyModal({ isOpen, onClose, onApiKeySaved }) {
             <button
               type="button"
               onClick={handleTestConnection}
-              disabled={isTesting || !apiKey.trim()}
+              disabled={isTesting || !keysInput.trim()}
               className="btn-nav"
-              style={{ fontSize: '0.82rem', padding: '6px 12px', border: '1px solid var(--border-emerald)' }}
+              style={{ fontSize: '0.82rem', padding: '6px 14px', border: '1px solid var(--border-emerald)' }}
             >
               {isTesting ? (
                 <>
@@ -125,7 +149,7 @@ export default function ApiKeyModal({ isOpen, onClose, onApiKeySaved }) {
                 </>
               ) : (
                 <>
-                  <Zap size={14} color="#10b981" /> Tes Koneksi API
+                  <Zap size={14} color="#10b981" /> Tes Semua API Key
                 </>
               )}
             </button>
@@ -136,7 +160,7 @@ export default function ApiKeyModal({ isOpen, onClose, onApiKeySaved }) {
               rel="noopener noreferrer"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: 'var(--gold-400)', fontSize: '0.85rem' }}
             >
-              <span>Dapatkan API Key Gratis di Google AI Studio</span>
+              <span>Buat Key Baru Gratis di Google AI Studio</span>
               <ExternalLink size={14} />
             </a>
           </div>

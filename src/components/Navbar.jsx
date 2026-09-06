@@ -17,7 +17,7 @@ export default function Navbar({ onOpenApiKey, onOpenGuide, apiKeyConfigured }) 
                 <Sparkles size={13} /> Gemini 2.5
               </span>
             </div>
-            <p className="brand-subtitle">Analisis I'rab & Morfologi Al-Qur'an BY ABI ULYA </p>
+            <p className="brand-subtitle">I'rab & Morfologi Al-Qur'an BY ABI ULYA [[ MANDI LAI]] </p>
           </div>
         </div>
 

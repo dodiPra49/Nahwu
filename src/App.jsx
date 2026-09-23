@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import SearchBar from './components/SearchBar';
+import SearchHistoryCard from './components/SearchHistoryCard';
 import VerseHeaderCard from './components/VerseHeaderCard';
 import WordGrid from './components/WordGrid';
 import WordDetailModal from './components/WordDetailModal';
@@ -11,6 +12,12 @@ import InfoModal from './components/InfoModal';
 import { parseSearchInput } from './utils/inputParser';
 import { fetchOfficialVerse } from './services/quranApiService';
 import { analyzeVerse, getStoredApiKey } from './services/geminiService';
+import {
+  getStoredSearchHistory,
+  addSearchHistoryItem,
+  removeSearchHistoryItem,
+  clearSearchHistory,
+} from './utils/historyStorage';
 import { PRESET_ANALYSIS } from './data/presetSamples';
 import { AlertCircle, RefreshCw, Key } from 'lucide-react';
 import './App.css';
@@ -22,16 +29,34 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastQuery, setLastQuery] = useState('');
+  const [historyItems, setHistoryItems] = useState([]);
 
   // Modal States
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
 
-  // Periksa status API key saat komponen dimuat
+  // Periksa status API key dan riwayat saat komponen dimuat
   useEffect(() => {
     const key = getStoredApiKey();
     setApiKeyConfigured(Boolean(key));
+
+    // Muat riwayat pencarian tersimpan (maks 5 item)
+    const storedHistory = getStoredSearchHistory();
+    if (storedHistory.length > 0) {
+      setHistoryItems(storedHistory);
+    } else {
+      // Inisialisasi dengan data default Al-Fatihah: 1
+      const initialEntry = addSearchHistoryItem({
+        query: 'Al-Fatihah: 1',
+        surahNumber: 1,
+        surahName: 'Al-Fatihah',
+        ayahNumber: 1,
+        arabicSnippet: 'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ',
+        translationSnippet: 'Dengan nama Allah Yang Maha Pengasih, Maha Penyayang.',
+      });
+      setHistoryItems(initialEntry);
+    }
 
     // Muat data awal default: Al-Fatihah: 1 dari preset instan
     const defaultData = PRESET_ANALYSIS['1:1'];
@@ -74,12 +99,37 @@ export default function App() {
       const result = await analyzeVerse(parsed.surah, parsed.ayahNumber, officialVerse);
       setAnalysisData(result);
       setSelectedWord(null);
+
+      // Simpan ke riwayat 5 pencarian terakhir
+      const updatedHistory = addSearchHistoryItem({
+        query: `${parsed.surah.nameLatin}: ${parsed.ayahNumber}`,
+        surahNumber: parsed.surah.number,
+        surahName: parsed.surah.nameLatin,
+        ayahNumber: parsed.ayahNumber,
+        arabicSnippet: result.arabicFull || '',
+        translationSnippet: result.translationId || '',
+      });
+      setHistoryItems(updatedHistory);
     } catch (err) {
       console.error('Error saat analisis:', err);
       setError(err.message || 'Terjadi kesalahan saat memproses analisis.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSelectHistoryItem = (query) => {
+    handleSearch(query);
+  };
+
+  const handleClearHistory = () => {
+    const emptyList = clearSearchHistory();
+    setHistoryItems(emptyList);
+  };
+
+  const handleRemoveHistoryItem = (id) => {
+    const updated = removeSearchHistoryItem(id);
+    setHistoryItems(updated);
   };
 
   const handleWordSelect = (word) => {
@@ -120,6 +170,17 @@ export default function App() {
           onSearch={handleSearch}
           isLoading={isLoading}
           initialQuery="Al-Fatihah: 1"
+        />
+
+        {/* Card Riwayat 5 Pencarian Terakhir */}
+        <SearchHistoryCard
+          historyItems={historyItems}
+          currentSurahNumber={surahMeta?.number || analysisData?.surahNumber}
+          currentAyahNumber={analysisData?.ayahNumber}
+          onSelectHistoryItem={handleSelectHistoryItem}
+          onClearHistory={handleClearHistory}
+          onRemoveHistoryItem={handleRemoveHistoryItem}
+          isLoading={isLoading}
         />
 
         {/* Pesan Error */}

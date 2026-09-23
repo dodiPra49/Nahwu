@@ -1,0 +1,283 @@
+/* ==========================================================================
+   SEARCH HISTORY CARD - CSS MODULE
+   ========================================================================== */
+
+.historyContainer {
+  width: 100%;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.historyCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.historyCard:hover {
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+/* Header */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerIconWrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--emerald-400);
+  flex-shrink: 0;
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.badgeCount {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: var(--gold-400);
+}
+
+.btnClearAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btnClearAll:hover:not(:disabled) {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.btnClearAll:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Grid & Items */
+.itemsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .itemsGrid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+.historyItem {
+  position: relative;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.historyItem:hover:not(.itemDisabled) {
+  background: rgba(16, 185, 129, 0.06);
+  border-color: rgba(16, 185, 129, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.itemActive {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: var(--emerald-400);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
+}
+
+.itemDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.itemTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.surahBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--gold-200);
+}
+
+.ayahPill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.itemTopActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timeLabel {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.btnRemoveItem {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.btnRemoveItem:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.arabicPreview {
+  font-family: var(--font-arabic);
+  font-size: 1.05rem;
+  color: var(--emerald-100);
+  line-height: 1.4;
+  direction: rtl;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 0;
+}
+
+.translationPreview {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activeIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--emerald-400);
+  background: rgba(16, 185, 129, 0.12);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 24px 16px;
+  gap: 8px;
+}
+
+.emptyIcon {
+  color: var(--text-dim);
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+
+.emptyTitle {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.emptySubtitle {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  max-width: 380px;
+  margin: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
